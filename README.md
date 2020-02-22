@@ -1,40 +1,19 @@
 ### FASTUSBasp programmer for AVR Microcontrollers
 [![Join the chat at https://gitter.im/FASTUSBasp/Lobby](https://badges.gitter.im/FASTUSBasp/Lobby.svg)](https://gitter.im/FASTUSBasp/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-This is the fast ISP programmer for AVR MCUs based on cheap stm32f103c8t6 aka `blue-pill` board with usb-to-serial support.
+This is the fast ISP programmer for AVR MCUs based on stm32f407vet6 board with usb-to-serial support.
 
-#### FastUSBASPv2 board
-![FastUSBASPv2 board](render.png)
+#### Reference
 
-#### Perf board
-![perfboard](https://pbs.twimg.com/media/DHQejIxVoAAy5xX.jpg)
-
-### Correcting wrong pullup at USB D+
-
-This blue pill board has wrong pullup resistor at usb D+ line.
-You might need to fix it before using blue pill as an AVR programmer.
-Refer to this guide: [http://amitesh-singh.github.io/stm32/2017/10/09/correcting-usbpullup-resistor.html][fixpullup-link]
+This project is a fork to amitesh-singh Blue Pill's FASTUSBasp  
+Thanks to him for the original [project](https://github.com/amitesh-singh/FASTUSBasp)
 
 ### how to upload firmware
 
-#### blue pill board with correct pullup at USB D+ line
-If you have fixed the pullup at D+ line, use `firmware/fastusbasp.bin`
-The pre-compiled binary is at `firmware/fastusbasp.bin`.
-
 ```shell
-$ git clone https://github.com/amitesh-singh/FASTUSBasp
-$ st-flash write firmware/fastusbasp.bin 0x08000000
+$ git clone https://github.com/feer9/FASTUSBasp
+$ st-flash write firmware/fastusbasp.hex 0x08000000
 ```
-
-#### blue pill board with wrong pullup at USB D+ line
-In case, you did not fix the wrong pullup at D+ line, use  
-`firmware/fastusbasp-wrongpullup.bin` binary instead
-
-```shell
-$ git clone https://github.com/amitesh-singh/FASTUSBasp
-$ st-flash write firmware/fastusbasp-wrongpullup.bin 0x08000000
-```
-
 
 ### How to use
 
@@ -42,25 +21,25 @@ $ st-flash write firmware/fastusbasp-wrongpullup.bin 0x08000000
 
 It uses SPI2 to communicate to AVR.
 
-Blue pill | AVR   
---------- | -------
-PB15  |   MOSI  
-PB14  |   MISO  
-PB13  |   SCK    
-PA8   |   RST  
-5v or 3.3v |     5v   
-GND        |    GND   
+STM32V407  | AVR   
+---------- | -------  
+PB5        |   MOSI  
+PB4        |   MISO  
+PB3        |   SCK    
+PB8        |   RST  
+5v or 3.3v |   5v   
+GND        |   GND   
 
 #### Serial connections
 Serial ports are `PA10`(RX) and `PA9` (TX).  
-This can be used to debug AVR Microcontrollers.
+This can be used to debug AVR Microcontrollers.  
 
-Blue pill | AVR   
---------- | -------
-PA10      | TX
-PA9       | RX
+STM32V407 | AVR   
+--------- | -------  
+PA10      | TX  
+PA9       | RX  
 
-All pins SPI2(PB15, PB14, PB13), Serial(PA10, PA9) and RST(PA8) used are 5V tolerant.
+All pins SPI2(PB5, PB4, PB3), Serial(PA10, PA9) and RST(PB8) used are 5V tolerant.
 
 #### udev rule
 
@@ -191,20 +170,20 @@ in case target MCU `F_CPU` is bit low < 12MHz
 To build fastusbasp firmware from source code, follow below guidelines.
 
 #### compile
-Refer my post on how to setup stm32 devlopment environment on Arch linux.
+Refer amitesh-singh's post on how to setup stm32 devlopment environment on Arch linux.
 http://amitesh-singh.github.io/stm32/2017/04/09/setting-stm32-dev-environment-arch-linux.html
 
 Make sure you have compiled `libopencm3` library.
 
 ```shell
-$ git clone https://github.com/amitesh-singh/FASTUSBasp
+$ git clone https://github.com/feer9/FASTUSBasp
 $ vi config.cmake  # set the libopencm3 path here
 $ cmake .
 $ make
 ```
 #### Upload the firmware
 ##### using STLINK
-connect `st-link` programmer to `blue-pill` and upload the firmware
+connect `st-link` programmer to `stm32` and upload the firmware
 
 ```shell
 $ make fastusbasp-upload
@@ -213,11 +192,11 @@ $ make fastusbasp-upload
 
 ##### using serial port
 
-Install `stm32flash` utility on linux.
-To program `stm32f103` via USART, you need to set `BOOT0` as `1`
+Install `stm32flash` utility on linux.  
+To program `stm32f407` via USART, you need to set `BOOT0` as `1`  
 and leave `BOOT1` as `0`.
 
-Connect any usb to uart converter device and connect PA9 to RXD and PA10 to TXD
+Connect any usb to uart converter device and connect PA9 to RXD and PA10 to TXD  
 and connect GND.
 
 ```shell
@@ -230,4 +209,3 @@ $ make fastusbasp-serialupload
 - http://amitesh-singh.github.io/stm32/2017/05/21/FASTUSBasp-programmer-avr.html
 - https://hackaday.io/project/21189-fastusbasp-programmer-for-avr
 
-[fixpullup-link]: http://amitesh-singh.github.io/stm32/2017/10/09/correcting-usbpullup-resistor.html
