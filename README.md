@@ -21,8 +21,8 @@ $ st-flash write firmware/fastusbasp.hex 0x08000000
 
 It uses SPI2 to communicate to AVR.
 
-STM32V407  | AVR   
----------- | -------  
+STM32F407  | AVR
+---------- | -------
 PB5        |   MOSI  
 PB4        |   MISO  
 PB3        |   SCK    
@@ -34,8 +34,8 @@ GND        |   GND
 Serial ports are `PA10`(RX) and `PA9` (TX).  
 This can be used to debug AVR Microcontrollers.  
 
-STM32V407 | AVR   
---------- | -------  
+STM32F407 | AVR
+--------- | -------
 PA10      | TX  
 PA9       | RX  
 
