@@ -19,7 +19,7 @@
 #ifndef _DMA_BUFFER_H
 #define _DMA_BUFFER_H
 
-#include "rcc.h"
+#include "../rcc.h"
 
 extern "C"
 {
@@ -34,15 +34,15 @@ class dmabuffer
 {
    void _enableNvicIrq()
      {
-        if (dma == DMA1 && channel == DMA_CHANNEL1)
-          nvic_enable_irq(NVIC_DMA1_CHANNEL1_IRQ);
-        else if (dma == DMA1 && channel == DMA_CHANNEL7)
-          nvic_enable_irq(NVIC_DMA1_CHANNEL7_IRQ);
+        if (dma == DMA1 && channel == DMA_STREAM1)
+          nvic_enable_irq(NVIC_DMA1_STREAM1_IRQ);
+        else if (dma == DMA1 && channel == DMA_STREAM7)
+          nvic_enable_irq(NVIC_DMA1_STREAM7_IRQ);
 
         //XXX: write for others
      }
 
-   uint32_t _memsize = DMA_CCR_MSIZE_8BIT;
+   uint32_t _memsize = DMA_SxCR_MSIZE_8BIT;
 
  public:
    dmabuffer_cb _dma_cb;
@@ -71,13 +71,14 @@ class dmabuffer
         _enableNvicIrq();
 
         //reset the channel
-        dma_channel_reset(dma, channel);
+        dma_stream_reset(dma, channel);
         //disable the channel before changing the dma settings
-        dma_disable_channel(dma, channel);
+        dma_disable_stream(dma, channel);
 
         //enable mem2mem 
-        dma_enable_mem2mem_mode(dma, channel);
-        dma_set_priority(dma, channel, DMA_CCR_PL_HIGH);
+//        dma_enable_mem2mem_mode(dma, channel);
+        dma_set_transfer_mode(dma, channel, DMA_SxCR_DIR_MEM_TO_MEM);
+        dma_set_priority(dma, channel, DMA_SxCR_PL_HIGH);
         //32bit wide transfer for source and destination
         // dma_set_memory_size(dma, channel, DMA_CCR_MSIZE_8BIT);
         // dma_set_peripheral_size(dma, channel, DMA_CCR_MSIZE_8BIT);
@@ -90,7 +91,8 @@ class dmabuffer
         dma_enable_peripheral_increment_mode(dma, channel);
 
         //we define the source as peripherals
-        dma_set_read_from_peripheral(dma, channel);
+//        dma_set_read_from_peripheral(dma, channel);
+        dma_set_transfer_mode(dma, channel, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
 
         //enable interrupt on transfer complete.
         dma_enable_transfer_complete_interrupt(dma, channel);
@@ -103,13 +105,13 @@ class dmabuffer
         dma_set_number_of_data(dma, channel, len);
         dma_set_peripheral_address(dma, channel, uint32_t (src));
         dma_set_memory_address(dma, channel, uint32_t (dst));
-        dma_enable_channel(dma, channel);
+        dma_enable_stream(dma, channel);
      }
 
    //This disables the dma@channel
    inline void disable()
      {
-        dma_disable_channel(dma, channel);
+        dma_disable_stream(dma, channel);
      }
 };
 

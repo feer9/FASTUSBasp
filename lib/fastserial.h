@@ -73,11 +73,14 @@ class fastserial
         RCC::enable(RCC_USART1);
         nvic_enable_irq(NVIC_USART1_IRQ);
 
-        _rx.assign(GPIOA, GPIO10);
-        _rx.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+        _rx.assign(GPIO10, GPIOA);
+        _rx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+        _rx.setAF(GPIO_AF7);
 
-        _tx.assign(GPIOA, GPIO9);
-        _tx.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_ALTFPUSHPULL);
+        _tx.assign(GPIO9, GPIOA);
+        _tx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+        _tx.setAF(GPIO_AF7);
+        _tx.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
 
         //disable the USAST before setting it.
         usart_disable(_nativeUSART);
@@ -97,8 +100,8 @@ class fastserial
         usart_enable(_nativeUSART);
 
         //Tx is handled by dma. set it up now
-        nvic_set_priority(NVIC_DMA1_CHANNEL4_IRQ, 0);
-        nvic_enable_irq(NVIC_DMA1_CHANNEL4_IRQ);
+        nvic_set_priority(NVIC_DMA1_STREAM4_IRQ, 0);
+        nvic_enable_irq(NVIC_DMA1_STREAM4_IRQ);
      }
 
    void write(uint8_t *d, uint16_t len)
@@ -106,22 +109,23 @@ class fastserial
         transferred = false;
 
         //reset dma channel
-        dma_channel_reset(DMA1, DMA_CHANNEL4);
-        dma_disable_channel(DMA1, DMA_CHANNEL4);
+        dma_stream_reset(DMA1, DMA_STREAM4);
+        dma_disable_stream(DMA1, DMA_STREAM4);
 
-        dma_set_peripheral_address(DMA1, DMA_CHANNEL4, (uint32_t)&USART1_DR);
+        dma_set_peripheral_address(DMA1, DMA_STREAM4, (uint32_t)&USART1_DR);
 
-        dma_set_memory_address(DMA1, DMA_CHANNEL4, (uint32_t)d);
-        dma_set_number_of_data(DMA1, DMA_CHANNEL4, len);
-        dma_set_read_from_memory(DMA1, DMA_CHANNEL4);
-        dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL4);
-        dma_set_peripheral_size(DMA1, DMA_CHANNEL4, DMA_CCR_PSIZE_8BIT);
-        dma_set_memory_size(DMA1, DMA_CHANNEL4, DMA_CCR_MSIZE_8BIT);
-        dma_set_priority(DMA1, DMA_CHANNEL4, DMA_CCR_PL_VERY_HIGH);
+        dma_set_memory_address(DMA1, DMA_STREAM4, (uint32_t)d);
+        dma_set_number_of_data(DMA1, DMA_STREAM4, len);
+      //  dma_set_read_from_memory(DMA1, DMA_STREAM4);
+        dma_set_transfer_mode(DMA1, DMA_STREAM4, DMA_SxCR_DIR_MEM_TO_PERIPHERAL);
+        dma_enable_memory_increment_mode(DMA1, DMA_STREAM4);
+        dma_set_peripheral_size(DMA1, DMA_STREAM4, DMA_SxCR_PSIZE_8BIT);
+        dma_set_memory_size(DMA1, DMA_STREAM4, DMA_SxCR_MSIZE_8BIT);
+        dma_set_priority(DMA1, DMA_STREAM4, DMA_SxCR_PL_VERY_HIGH);
 
-        dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL4);
+        dma_enable_transfer_complete_interrupt(DMA1, DMA_STREAM4);
 
-        dma_enable_channel(DMA1, DMA_CHANNEL4);
+        dma_enable_stream(DMA1, DMA_STREAM4);
 
         usart_enable_tx_dma(_nativeUSART);
      }
@@ -165,18 +169,19 @@ extern "C" void usart1_isr(void)
 }
 
 //Tx
-extern "C" void dma1_channel4_isr(void)
+extern "C" void dma1_stream4_isr(void)
+//extern "C" void DMA1_Stream4_IRQHandler(void)
 {
-   if ((DMA1_ISR &DMA_ISR_TCIF4) != 0)
+   if ((DMA1_HISR &DMA_HISR_TCIF4) != 0)
      {
-        DMA1_IFCR |= DMA_IFCR_CTCIF4;
+        DMA1_HIFCR |= DMA_HIFCR_CTCIF4;
 
         fastserial1.transferred = true;
      }
 
-   dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL4);
+   dma_disable_transfer_complete_interrupt(DMA1, DMA_STREAM4);
    usart_disable_tx_dma(DMA1);
-   dma_disable_channel(DMA1, DMA_CHANNEL4);
+   dma_disable_stream(DMA1, DMA_STREAM4);
 }
 
 

@@ -19,24 +19,41 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#define INBUILT_LED GPIO13
-#define INBUILT_LED_PORT GPIOC
-#define INBUILT_LED_RCC RCC_GPIOC
+extern "C"
+{
+  #include <libopencm3/stm32/rcc.h>
+}
 
-#define ISP_BUS SPI2
-#define ISP_BUS_RCC RCC_SPI2
+#define INBUILT_LED GPIO6
+#define INBUILT_LED_PORT GPIOA
+#define INBUILT_LED_RCC RCC_GPIOA
+
+#define ISP_BUS SPI1
+#define ISP_BUS_RCC RCC_SPI1
 
 #define ISP_PORT_RCC RCC_GPIOB
 #define ISP_PORT GPIOB
-#define ISP_MOSI GPIO15
-#define ISP_MISO GPIO14
-#define ISP_SCK  GPIO13
+#define ISP_MOSI GPIO5
+#define ISP_MISO GPIO4
+#define ISP_SCK  GPIO3
 
-#define ISP_RST_RCC RCC_GPIOA
-#define ISP_RST_PORT GPIOA
+#define ISP_RST_RCC RCC_GPIOB
+#define ISP_RST_PORT GPIOB
 #define ISP_RST GPIO8
 
 //define this to 1, if blue pill has wrong pull up at USB D+ line
 #define USBDPLUS_WRONG_PULLUP 0
+
+#ifdef DEBUG
+#include "serial.h"
+extern serial s2;
+#define dbg(msg)    s2.print(msg)
+#define dbgln(msg)  s2.println(msg)
+#define dbgnum(num) s2.printint(num)
+#else
+#define dbg(msg)
+#define dbgln(msg)
+#define dbgnum(num)
+#endif
 
 #endif

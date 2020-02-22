@@ -6,14 +6,16 @@ size = find_program('arm-none-eabi-size')
 objcopy = find_program('arm-none-eabi-objcopy')
 stinfo = find_program('st-info')
 stflash = find_program('st-flash')
+stm32flash = find_program('stm32flash')
+
 
 #define libopencm3 path here
-libocm3Path = '/home/ami/repos/libopencm3'
+libocm3Path = '/home/feer/stm32/libopencm3'
 
 #define cpu types here
-cputype = 'cortex-m3'
-cpudefine = 'STM32F1'
-libocm3cputype = 'opencm3_stm32f1'
+cputype = 'cortex-m4'
+cpudefine = 'STM32F4'
+libocm3cputype = 'opencm3_stm32f4'
 
 #Add your source files here
 srcfiles = ['src/main.cpp']
@@ -21,7 +23,7 @@ srcfiles = ['src/main.cpp']
 
 libocm3IncPath = libocm3Path + '/include'
 libocm3LibPath = libocm3Path + '/lib'
-libocm3LibPath2 = libocm3Path + '/lib/stm32/f1'
+libocm3LibPath2 = libocm3Path + '/lib/stm32/f4'
 
 # check for libopencm3 library
 libocm3lib_dep = compiler_obj.find_library(libocm3cputype, required: true, dirs: libocm3LibPath)
@@ -35,32 +37,41 @@ libocm3_incdir = include_directories(libocm3IncPath)
 
 
 myfoolib_path= '../lib'
-stm32f1cargs = ['-Os',
+stm32f4cargs = ['-Os',
                 '-ggdb',
+                #'-g',
                 '-mcpu=' + cputype,
                 '-mthumb',
-                '-msoft-float',
+                '-mfpu=fpv4-sp-d16',
+                '-mfloat-abi=hard',
                 '-std=gnu++14',
                 '-Wall',
                 '-ffunction-sections',
                 '-fdata-sections',
                 '-D' + cpudefine,
+#                '-DDEBUG',
                 '-fdata-sections',
                 '-fno-exceptions',
                 '-I' + myfoolib_path,
 #'-I' + libocm3IncPath
+#'-mhard-float',
+
+                '-fno-use-cxa-atexit',
                 ]
 
-stm32f1linkargs = ['-Os',
+stm32f4linkargs = ['-Os',
                    '-ggdb',
+                   #'-g',
                    '-D' + cpudefine,
                    '-fdata-sections',
                    '-mcpu=' + cputype,
+                   '-mfpu=fpv4-sp-d16',
                    '-mthumb',
-                   '-msoft-float',
+                   '-mfloat-abi=hard',
+#                   '-mhard-float',
                    '-lc',
                    '-flto',
-#'-T../libopencm3_f1.ld',
+#'-T../libopencm3_f4.ld',
                    '-T' + meson.current_source_dir() + '/libopencm3.ld',
                    '--specs=nosys.specs',
                    '-nostartfiles',
@@ -68,11 +79,13 @@ stm32f1linkargs = ['-Os',
                    '-L' + libocm3LibPath,
                    '-L' + libocm3LibPath2,
 #               '-l' + libocm3cputype,
+
+                   '-fno-use-cxa-atexit',
                   ]
 
 subdir('lib')
 
-p = ['fastusbaspv2', srcfiles, stm32f1cargs, stm32f1linkargs]
+p = ['fastusbaspv2', srcfiles, stm32f4cargs, stm32f4linkargs]
 
 exe = executable(p[0], p[1],
                  cpp_args: p[2],
@@ -84,18 +97,25 @@ exe = executable(p[0], p[1],
 
 run_target('hex', command: [objcopy, ['-Obinary', exe.full_path(),
            exe.full_path() + '.hex']], depends: exe)
+run_target('bin', command: [objcopy, ['-Obinary', exe.full_path(),
+           exe.full_path() + '.bin']], depends: exe)
 run_target('size', command: [size, exe.full_path(), '-B'], depends: exe)
 
 # STlink programmer related commands
 run_target('probe', command: [stinfo, '--probe'])
 run_target('upload', command: [stflash, 'write', exe.full_path() + '.hex', '0x08000000'], depends: exe)
+run_target('flash', command: [stm32flash, '-w', exe.full_path() + '.hex', '-b 115200', '/dev/ttyUSB0'], depends: exe)
 
 if meson.is_cross_build()
    message('cross compiling for ' + cputype)
-   message('\n    ninja - generates elf file.
-                  ninja hex - generates hex file.
-                  ninja upload - upload hex file to stm32 via stlink programmer.
-                  ninja probe - probe stlink programmer.
-                  (C) Amitesh Singh ')
+   message('''
+            ninja - generates elf file.
+            ninja hex - generates hex file.
+            ninja bin - generates bin file.
+            ninja upload - upload hex file to stm32 via stlink programmer.
+            ninja flash - upload hex file to stm32 via serial port with stm32flash.
+            ninja probe - probe stlink programmer.
+            (C) Amitesh Singh''')
 endif
+
 

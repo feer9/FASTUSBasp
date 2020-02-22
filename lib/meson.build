@@ -7,7 +7,7 @@ libsrcfiles = [ 'pin.h',
             'fastserial.h',
             'usb/descriptor.h']
 
-mylib = ['foo', libsrcfiles, stm32f1cargs, stm32f1linkargs]
+mylib = ['foo', libsrcfiles, stm32f4cargs, stm32f4linkargs]
 
 foolib = static_library(mylib[0],
                         mylib[1],

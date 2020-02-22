@@ -18,16 +18,20 @@
             "macFrameworkPath": [
                 "/System/Library/Frameworks",
                 "/Library/Frameworks"
-            ]
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         },
         {
             "name": "Linux",
             "includePath": [
-                "/usr/include",
-                "/usr/local/include",
-                "/home/ami/repos/libopencm3",
-                "/home/ami/repos/libopencm3/include",
-                "/home/ami/repos/libopencm3/lib/stm32/f1"
+                "${workspaceFolder}/lib",
+                "${workspaceFolder}/src",
+                "/home/feer/stm32/libopencm3/include",
+                "/home/feer/stm32/libopencm3/include/libopencm3",
+                "/home/feer/stm32/libopencm3/include/libopencm3/usb",
+                "/home/feer/stm32/libopencm3/include/libopencm3/usb/dwc"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
@@ -35,15 +39,20 @@
                 "path": [
                     "/usr/include",
                     "/usr/local/include",
-                    "/home/ami/repos/libopencm3",
-                    "/home/ami/repos/libopencm3/include",
-                    "/home/ami/repos/libopencm3/lib/stm32/f1"
+                    "/home/feer/stm32/libopencm3",
+                    "/home/feer/stm32/libopencm3/include",
+                    "/home/feer/stm32/libopencm3/lib/stm32/f1",
+                    "/home/feer/stm32/FASTUSBasp/lib"
                 ]
             },
-            "intelliSenseMode": "clang-x64",
-            "compilerPath": "/usr/bin/clang",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++11",
+            "defines": [
+                "STM32F4",
+                "DEBUG"
+            ]
         },
         {
             "name": "Win32",
@@ -57,8 +66,11 @@
                     "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/*"
                 ]
             },
-            "intelliSenseMode": "msvc-x64"
+            "intelliSenseMode": "msvc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
         }
     ],
-    "version": 3
+    "version": 4
 }

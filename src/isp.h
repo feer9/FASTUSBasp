@@ -62,7 +62,7 @@ void set_ack_option(uint8_t option);
 
 // variables declaration
 static uint8_t isp_hiaddr;
-uint8_t prog_sck = 0;
+uint8_t prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_16;
 int8_t prescalar_baudrate = -1;
 
 pin mosi, miso, sck, rst;
@@ -70,9 +70,10 @@ pin mosi, miso, sck, rst;
 void
 isp_connect(void)
 {
-   rst.assign(ISP_RST_PORT, ISP_RST);
-   rst.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_PUSHPULL);
-
+   rst.assign(ISP_RST, ISP_RST_PORT);
+   rst.setMode(GPIO_MODE_OUTPUT, GPIO_PUPD_NONE);
+   rst.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
+ 
    spi_setup();
 
    //reset device
@@ -91,13 +92,13 @@ isp_connect(void)
 void
 isp_disconnect(void)
 {
-   rst.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+   rst.setMode(GPIO_MODE_INPUT, GPIO_PUPD_NONE);
    rst.off();
 
-   mosi.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+   mosi.setMode(GPIO_MODE_INPUT, GPIO_PUPD_NONE);
    mosi.off();
 
-   sck.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+   sck.setMode(GPIO_MODE_INPUT, GPIO_PUPD_NONE);
    sck.off();
 
    spi_disable(SPI1);
@@ -106,14 +107,22 @@ isp_disconnect(void)
 void
 spi_setup(void)
 {
-   mosi.assign(ISP_PORT, ISP_MOSI);
-   mosi.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_ALTFPUSHPULL);
+   mosi.assign(ISP_MOSI, ISP_PORT);
+//   mosi.setMode(PinMode::OUTPUT, PinConfig::OUTPUT_ALTFPUSHPULL);
+   mosi.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP); // output
+   mosi.setAF(ISP_BUS == SPI3 ? GPIO_AF6 : GPIO_AF5);
+   mosi.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ);
 
-   miso.assign(ISP_PORT, ISP_MISO);
-   miso.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+   miso.assign(ISP_MISO, ISP_PORT);
+//   miso.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+   miso.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP); // input
+   miso.setAF(ISP_BUS == SPI3 ? GPIO_AF6 : GPIO_AF5);
 
-   sck.assign(ISP_PORT, ISP_SCK);
-   sck.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_ALTFPUSHPULL);
+   sck.assign(ISP_SCK, ISP_PORT);
+//   sck.setMode(PinMode::OUTPUT, PinConfig::OUTPUT_ALTFPUSHPULL);
+   sck.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP); // output
+   sck.setAF(ISP_BUS == SPI3 ? GPIO_AF6 : GPIO_AF5);
+   sck.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ);
 
    spi_reset(ISP_BUS);
 
@@ -294,6 +303,13 @@ set_ack_option(uint8_t option)
    prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_16;
    //TODO: use spi_set_baudrate_prescaler() to support 
    // more speed options: SPI_CR1_BR_FPCLK_DIV_2/4...
+
+   dbg("in set_ack_option, opt: "); dbgnum(option);
+   dbgln("");
+
+   // SPI1 USES APB2, which actually is set to 48MHz
+
+
    if (option == USBASP_ISP_SCK_AUTO)
      {
         prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_16;
@@ -319,36 +335,45 @@ set_ack_option(uint8_t option)
         prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
         prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_2;
      }
-   /*
-      else if (option == USBASP_ISP_SCK_32)
-      {
 
-      }
-      else if (option == USBASP_ISP_SCK_16)
-      {
-
-      }
-      else if (option == USBASP_ISP_SCK_8)
-      {
-
-      }
-      else if (option == USBASP_ISP_SCK_4)
-      {
-
-      }
-      else if (option == USBASP_ISP_SCK_2)
-      {
-
-      }
-      else if (option == USBASP_ISP_SCK_1)
-      {
-
-      }
-      else if (option == USBASP_ISP_SCK_0_5)
-      {
-
-      }
-      */
+   // a partir de aca son aproximados, salvo que cambies el clock
+   else if (option == USBASP_ISP_SCK_32)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_8;
+   }
+   else if (option == USBASP_ISP_SCK_16)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_16;
+   }
+   else if (option == USBASP_ISP_SCK_8)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_32;
+   }
+   else if (option == USBASP_ISP_SCK_4)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_64;
+   }
+   else if (option == USBASP_ISP_SCK_2)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_128;
+   }
+   else if (option == USBASP_ISP_SCK_1)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_256;
+   }
+   else if (option == USBASP_ISP_SCK_0_5)
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      prescalar_baudrate = SPI_CR1_BR_FPCLK_DIV_256;
+   }
    else
-     prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_16;
+   {
+      prog_sck = SPI_CR1_BAUDRATE_FPCLK_DIV_64;
+   }
 }

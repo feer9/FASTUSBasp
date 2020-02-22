@@ -39,13 +39,17 @@ void serial::begin(SerialType _st, uint32_t usart)
 
         if (_serialMode == SerialMode::RX || _serialMode == SerialMode::TX_RX)
           {
-             _rx.assign(GPIOA, GPIO10);
-             _rx.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+             _rx.assign(GPIO10, GPIOA);
+             _rx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+             _rx.setAF(GPIO_AF7);
           }
         if (_serialMode == SerialMode::TX || _serialMode == SerialMode::TX_RX)
           {
-             _tx.assign(GPIOA, GPIO9);
-             _tx.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_ALTFPUSHPULL);
+             _tx.assign(GPIO9, GPIOA);
+             _tx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+             _tx.setAF(GPIO_AF7);
+             _tx.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
+                                 // PushPull, originally 2MHz
           }
      }
    else if (_st == SerialType::Serial2)
@@ -57,34 +61,39 @@ void serial::begin(SerialType _st, uint32_t usart)
 
         if (_serialMode == SerialMode::RX || _serialMode == SerialMode::TX_RX)
           {
-             _rx.assign(GPIOA, GPIO3);
-             _rx.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+             _rx.assign(GPIO3, GPIOA);
+             _rx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+             _rx.setAF(GPIO_AF7);
           }
         if (_serialMode == SerialMode::TX || _serialMode == SerialMode::TX_RX)
           {
-             _tx.assign(GPIOA, GPIO2);
-             _tx.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_ALTFPUSHPULL);
+             _tx.assign(GPIO2, GPIOA);
+             _tx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+             _tx.setAF(GPIO_AF7);
+             _tx.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
           }
 
      }
    else if (_st == SerialType::Serial3)
      {
-        //Tested & it works.
-        _nativeUSART = USART3;
-        RCC::enable(RCC_GPIOB);
+        _nativeUSART = USART3; // there is no USART6 ?¿?¿
+        RCC::enable(RCC_GPIOC);
         RCC::enable(RCC_USART3);
 
         if (_serialMode == SerialMode::RX || _serialMode == SerialMode::TX_RX)
           {
              //GPIO_USART3_RX
-             _rx.assign(GPIOB, GPIO11);
-             _rx.setMode(PinMode::INPUT, PinConfig::INPUT_FLOAT);
+             _rx.assign(GPIO7, GPIOC);
+             _rx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+             _rx.setAF(GPIO_AF7);
           }
         if (_serialMode == SerialMode::TX || _serialMode == SerialMode::TX_RX)
           {
              //GPIO_USART3_TX
-             _tx.assign(GPIOB, GPIO10);
-             _tx.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_ALTFPUSHPULL);
+             _tx.assign(GPIO6, GPIOC);
+             _tx.setMode(GPIO_MODE_AF, GPIO_PUPD_PULLUP);
+             _tx.setAF(GPIO_AF7);
+             _tx.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
           }
      }
    //disable the USAST before setting it.

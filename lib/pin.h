@@ -23,13 +23,13 @@ extern "C"
 {
   #include <libopencm3/stm32/gpio.h>
 }
-
+/*
 enum class PinMode
 {
   INPUT,
-  OUTPUT_10MHZ,
-  OUTPUT_2MHZ,
-  OUTPUT_50MHZ,
+  OUTPUT,
+  AF,
+  ANALOG
 };
 
 enum class PinConfig
@@ -42,16 +42,16 @@ enum class PinConfig
   OUTPUT_ALTFPUSHPULL,
   OUTPUT_ALTFOPENDRAIN
 };
-
+*/
 
 class pin
 {
   volatile uint32_t _pinBaseAddr;
   uint32_t _port;
 
-  uint8_t _getNativePinMode(PinMode pm);
+//  uint8_t _getNativePinMode(PinMode pm);
 
-  uint8_t _getNativePinConfig(PinConfig pc);
+//  uint8_t _getNativePinConfig(PinConfig pc);
 
 public:
   pin(volatile uint32_t pinBaseAddr, uint32_t port);
@@ -59,7 +59,9 @@ public:
 
   
   void assign(volatile uint32_t pinBaseAddr, uint32_t port);
-  void setMode(PinMode pm, PinConfig pc);
+  void setMode(uint8_t mode, uint8_t pull_up_down);
+  void setAF(uint8_t alt_fun_num);
+  void setOutputOptions(uint8_t otype, uint8_t speed);
   void on();
   void off();
   void toggle();

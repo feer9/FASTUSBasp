@@ -34,8 +34,12 @@ enum class ClockSpeed
   CLOCK24MHZ,
   CLOCK48MHZ,
   CLOCK72MHZ,
-  //overclocked MCU speed
+  CLOCK84MHZ,
+  CLOCK96MHZ,
   CLOCK128MHZ,
+  CLOCK168MHZ,
+  //overclocked MCU speed
+  CLOCK180MHZ
 };
 
 //Refer to clock tree in STM32F103 DS to have clear picture.

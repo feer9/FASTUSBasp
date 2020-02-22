@@ -22,7 +22,7 @@ include(CMakeForceCompiler)
 
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION   1)
-set(CMAKE_SYSTEM_PROCESSOR cortex-m3)
+set(CMAKE_SYSTEM_PROCESSOR cortex-m4)
 
 find_program(ARM_CC arm-none-eabi-gcc
     ${TOOLCHAIN_DIR}/bin)
@@ -52,19 +52,19 @@ find_program(STM32FLASH stm32flash)
 
 CMAKE_FORCE_C_COMPILER(${ARM_CC} GNU)
 CMAKE_FORCE_CXX_COMPILER(${ARM_CXX} GNU)
-set(CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS} "-mcpu=cortex-m3 -mthumb")
+set(CMAKE_ASM_FLAGS ${CMAKE_ASM_FLAGS} "-mcpu=cortex-m4 -mthumb")
 
 set(BASE_PATH "${${PROJECT_NAME}_SOURCE_DIR}")
 set(SRC_PATH "${BASE_PATH}/src")
 set(LIB_PATH "${BASE_PATH}/lib")
 
 if (NOT DEFINED MCU)
-  set(MCU STM32F1)
+  set(MCU STM32F4)
 endif ()
 
-add_definitions(-DSTM32F1)
+add_definitions(-DSTM32F4)
 
-set(STM32F1_FLAGS "-Os -ggdb -mcpu=cortex-m3 -mthumb -mthumb-interwork -msoft-float" CACHE STRING "")
+set(STM32F4_FLAGS "-Os -ggdb -mcpu=cortex-m4 -mthumb -mthumb-interwork -msoft-float" CACHE STRING "")
 #Note: remove -fdata-sections and -ffunction-sections fixes problem in which ISR
 # is not getting called.
 # Well, we can use -fdata-sections & -ffunction-sections if 
@@ -72,20 +72,20 @@ set(STM32F1_FLAGS "-Os -ggdb -mcpu=cortex-m3 -mthumb -mthumb-interwork -msoft-fl
 # e.g.
 # __atrribute__ ((used)) int func() {..}
 #
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -Wall ${STM32F1_FLAGS} -std=c99 -fdata-sections -ffunction-sections" CACHE STRING "" )
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -Wall --std=c++14 ${STM32F1_FLAGS} " CACHE STRING "" )
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -Wall ${STM32F4_FLAGS} -std=c99 -fdata-sections -ffunction-sections" CACHE STRING "" )
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -Wall --std=c++14 ${STM32F4_FLAGS} " CACHE STRING "" )
 # -lnosys --specs=rdimon.specs - removed
-set(CMAKE_EXE_LINKER_FLAGS   " -flto -T ${CMAKE_SOURCE_DIR}/libopencm3.ld -nostartfiles -lopencm3_stm32f1 -lc -specs=nosys.specs -Wl,--gc-sections -Wl,--relax" CACHE STRING "")
+set(CMAKE_EXE_LINKER_FLAGS   " -flto -T ${CMAKE_SOURCE_DIR}/libopencm3.ld -nostartfiles -lopencm3_stm32f4 -lc -specs=nosys.specs -Wl,--gc-sections -Wl,--relax" CACHE STRING "")
 
 #file(GLOB_RECURSE USER_SOURCES ./*.c ./*.cpp)
 #target_include_directories(${NAME}.elf PRIVATE )
-#target_link_libraries(${NAME}.elf opencm3_stm32f1)
+#target_link_libraries(${NAME}.elf opencm3_stm32f4)
 
 include_directories(${LIBOPENCM3_DIR}/include)
 link_directories(${LIBOPENCM3_DIR}/lib)
-link_libraries(opencm3_stm32f1)
+link_libraries(opencm3_stm32f4)
 
-function(add_executable_stm32f1 NAME)
+function(add_executable_stm32f4 NAME)
     add_executable(${NAME} ${ARGN})
     set_target_properties(${NAME} PROPERTIES OUTPUT_NAME "${NAME}.elf")
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${NAME}.bin")
@@ -101,7 +101,7 @@ function(add_executable_stm32f1 NAME)
     add_custom_target(${NAME}-size COMMAND ${ARM_SIZE} ${NAME}.elf)
     add_custom_target(${NAME}-probe COMMAND ${ST_INFO} --probe)
     add_custom_target(${NAME}-upload COMMAND ${ST_FLASH} write ${NAME}.bin 0x08000000)
-     add_custom_target(${NAME}-ocdupload COMMAND ${OPENOCD} -f interface/stlink-v2.cfg -f target/stm32f103.cfg -c init -c "reset halt" -c "flash write_image erase ${NAME}.bin 0x08000000" -c "reset")
+     add_custom_target(${NAME}-ocdupload COMMAND ${OPENOCD} -f interface/stlink-v2.cfg -f target/stm32f407.cfg -c init -c "reset halt" -c "flash write_image erase ${NAME}.bin 0x08000000" -c "reset")
      add_custom_target(${NAME}-serialupload COMMAND ${STM32FLASH} -w ${NAME}.bin ${SERIAL_PORT})
 
-endfunction(add_executable_stm32f1)
+endfunction(add_executable_stm32f4)

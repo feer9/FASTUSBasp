@@ -74,6 +74,7 @@ static uint8_t prog_blockflags;
 static uint8_t prog_pagecounter;
 
 #include "isp.h"
+#include "config.h"
 
 static const char *usb_strings[] =
 {
@@ -241,28 +242,89 @@ class dmaqueue: public util::queue<txbuf>
       }
 };
 
-void *__dso_handle = nullptr;
+//void *__dso_handle = nullptr;
+extern void *__dso_handle;
 dmaqueue q(16);
 
 #ifdef DEBUG
 serial s2;
 #endif
 
-int
-main()
-{
-   //RCC::defaultClockSetup();
-   RCC::clockAt48mhz();
 
-   //set up all the clocks
+int main()
+{
+    RCC::defaultClockSetup();
+
+    //set up all the clocks
+    RCC::enable(INBUILT_LED_RCC);
+    RCC::enable(ISP_PORT_RCC);
+    RCC::enable(ISP_RST_RCC);
+    RCC::enable(ISP_BUS_RCC);
+
+    // set USB clock
+    RCC::enable(RCC_OTGFS);
+    // set USB pins to their functions
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO11 | GPIO12);
+    gpio_set_af(GPIOA, GPIO_AF10, GPIO11 | GPIO12);
+
+    // setup onboard led
+    led.assign(INBUILT_LED, INBUILT_LED_PORT);
+    led.setMode(GPIO_MODE_OUTPUT, GPIO_PUPD_NONE);
+    led.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
+    led.on();
+
+#ifdef DEBUG
+    s2.begin(SerialType::Serial2, 9600);
+#endif
+
+    time::enable(TimeFactor::MILLISECONDS);
+
+    fastserial1.setRxcb(_serial1_rx_callback);
+    
+    usbd_dev = usbd_init(&otgfs_usb_driver, &dev_desc, &config,
+                         usb_strings, 3,
+                         usbdControlBuf, sizeof(usbdControlBuf));
+
+    usbd_register_set_config_callback(usbd_dev, config_setup);
+
+
+    dbgln("holi, llegue bien al for(;;)");
+
+    for(;;)
+    {
+        if (!q.empty())
+        {
+            dbgln("not q.empty!");
+            fastserial1.write(q.front().buffer, q.front().len);
+            while(!fastserial1.transferred)
+            {
+                __asm__ volatile ("nop");
+            }
+            q.pop();
+        }
+        usbd_poll(usbd_dev);
+    }
+
+    return 0;
+}
+
+#if 0
+int
+main___()
+{
+   RCC::defaultClockSetup();
+   //RCC::clockAt48mhz();
+
+   // set up all the clocks
    RCC::enable(INBUILT_LED_RCC);
    RCC::enable(ISP_PORT_RCC);
    RCC::enable(ISP_RST_RCC);
    RCC::enable(ISP_BUS_RCC);
 
-   //setup onboard led 
-   led.assign(INBUILT_LED_PORT, INBUILT_LED);
-   led.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_PUSHPULL);
+   // setup onboard led
+   led.assign(INBUILT_LED, INBUILT_LED_PORT);
+   led.setMode(GPIO_MODE_OUTPUT, GPIO_PUPD_NONE);
+   led.setOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
    led.on();
 
 #ifdef DEBUG
@@ -280,17 +342,18 @@ main()
 #if USBDPLUS_WRONG_PULLUP == 1
      {
         pin usbdplus(GPIOA, GPIO12);
-        usbdplus.setMode(PinMode::OUTPUT_50MHZ, PinConfig::OUTPUT_PUSHPULL);
+        usbdplus.setMode(PinMode::OUTPUT, PinConfig::OUTPUT_PUSHPULL);
         usbdplus.off();
         time::delay(1);
      }
 #endif
 
    //usb setup code 
-   RCC::enable(RCC_USB);
+   RCC::enable(RCC_OTGFS);
 
-   usbd_dev = usbd_init(&st_usbfs_v1_usb_driver, &dev_desc, &config,
+   usbd_dev = usbd_init(&otgfs_usb_driver, &dev_desc, &config,
                         usb_strings, 3, usbdControlBuf, sizeof(usbdControlBuf));
+
    usbd_register_set_config_callback(usbd_dev, config_setup);
 
    while (1)
@@ -316,6 +379,7 @@ main()
 
    return 0;
 }
+#endif
 
 static void
 _serial_usb_data_in_cb(usbd_device *usb, uint8_t ep)
@@ -370,9 +434,9 @@ usbuart_set_line_coding(struct usb_cdc_line_coding *coding)
 static struct usb_cdc_line_coding _usb_cdc_line_coding_backup;
 
 static enum usbd_request_return_codes
-serial_control_request(usbd_device *usb, struct usb_setup_data *req, uint8_t **buf,
-                       uint16_t *len, void (**complete)(usbd_device *,
-                       struct usb_setup_data *))
+serial_control_request(usbd_device *usb,
+                       struct usb_setup_data *req, uint8_t **buf, uint16_t *len,
+                       void (**complete)(usbd_device *, struct usb_setup_data *))
 {
    (void) complete;
    (void) usb;
@@ -404,22 +468,38 @@ serial_control_request(usbd_device *usb, struct usb_setup_data *req, uint8_t **b
            }
       case USB_CDC_REQ_SET_LINE_CODING:
            {
-              if (*len < sizeof(struct usb_cdc_line_coding))
-                return USBD_REQ_NOTSUPP;
+              enum usbd_request_return_codes ret = USBD_REQ_HANDLED;
 
-              struct usb_cdc_line_coding *usbCdcLineCondig =(struct usb_cdc_line_coding *)*buf;
-              memcpy(&_usb_cdc_line_coding_backup, usbCdcLineCondig,
-                     sizeof(_usb_cdc_line_coding_backup));
+              if (*len == sizeof(struct usb_cdc_line_coding))
+              {
+                  struct usb_cdc_line_coding *usbCdcLineCondig =(struct usb_cdc_line_coding *)*buf;
+                  memcpy(&_usb_cdc_line_coding_backup, usbCdcLineCondig,
+                           sizeof(_usb_cdc_line_coding_backup));
 
-              fastserial1.begin(115200);
-              dma1Ch1Buffer.begin();
-              usbuart_set_line_coding(&_usb_cdc_line_coding_backup);
+                  fastserial1.begin(115200);
+                  dma1Ch1Buffer.begin();
+                  usbuart_set_line_coding(&_usb_cdc_line_coding_backup);
+              }
+              else
+              {
+                  ret = USBD_REQ_NOTSUPP;
+              }
 
+              usbd_ep_write_packet(usbd_dev, 0x82, &_usb_cdc_line_coding_backup, sizeof (_usb_cdc_line_coding_backup));
+
+              return ret;
+           }
+      case USB_CDC_REQ_GET_LINE_CODING:
+           {
+              usbd_ep_write_packet(usbd_dev, 0x82, &_usb_cdc_line_coding_backup, sizeof (_usb_cdc_line_coding_backup));
+              
               return USBD_REQ_HANDLED;
            }
      }
    return USBD_REQ_NEXT_CALLBACK;
 }
+
+
 
 static uint16_t
 read_usb(uint8_t* data, uint16_t len)
@@ -566,6 +646,7 @@ isp_control_endpoint(usbd_device *usb, struct usb_setup_data *req,
    else if (req->bRequest == USBASP_FUNC_SETISPSCK)
      {
         set_ack_option(req->wValue);
+        
 
         (*buf)[0] = 0;
         (*len) = 1;
@@ -650,4 +731,9 @@ config_setup(usbd_device *usb, uint16_t wValue)
                                   USB_REQ_TYPE_VENDOR,
                                   USB_REQ_TYPE_TYPE,
                                   isp_control_endpoint);
+}
+
+void led_toggle(void)
+{
+    led.toggle();
 }

@@ -41,6 +41,7 @@ public:
   static void delay(uint32_t ms);
   static void udelay(uint32_t us);
   static void disable();
+  static uint32_t get_system_ms(void);
 };
 
 #endif

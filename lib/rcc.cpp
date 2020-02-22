@@ -37,34 +37,37 @@ void RCC::disable(rcc_periph_clken clk)
 
 void RCC::defaultClockSetup()
 {
-   _clkSpeed = ClockSpeed::CLOCK72MHZ;
+   _clkSpeed = ClockSpeed::CLOCK96MHZ;
 
-   rcc_clock_setup_in_hse_8mhz_out_72mhz();
+  // rcc_clock_setup_in_hse_8mhz_out_72mhz();
+
+   rcc_clock_setup_pll(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_96MHz]);
 }
 
 void RCC::clockAt48mhz()
 {
+#if 0
    _clkSpeed = ClockSpeed::CLOCK48MHZ;
    /* Enable internal high-speed oscillator. */
    rcc_osc_on(RCC_HSI);
    rcc_wait_for_osc_ready(RCC_HSI);
 
    /* Select HSI as SYSCLK source. */
-   rcc_set_sysclk_source(RCC_CFGR_SW_SYSCLKSEL_HSICLK);
+   rcc_set_sysclk_source(RCC_CFGR_SW_HSI);
 
    /* Enable external high-speed oscillator 8MHz. */
    rcc_osc_on(RCC_HSE);
    rcc_wait_for_osc_ready(RCC_HSE);
-   rcc_set_sysclk_source(RCC_CFGR_SW_SYSCLKSEL_HSECLK);
+   rcc_set_sysclk_source(RCC_CFGR_SW_HSE);
 
    /*
     * Set prescalers for AHB, ADC, ABP1, ABP2.
     */
-   rcc_set_hpre(RCC_CFGR_HPRE_SYSCLK_NODIV);    /* Set. 48MHz Max. 72MHz */
-   rcc_set_adcpre(RCC_CFGR_ADCPRE_PCLK2_DIV4);  /* Set. 12MHz Max. 14MHz */
-   rcc_set_ppre1(RCC_CFGR_PPRE1_HCLK_DIV2);    /* Set. 24MHz Max. 36MHz */
-   rcc_set_ppre2(RCC_CFGR_PPRE2_HCLK_NODIV);    /* Set. 48MHz Max. 72MHz */
-   rcc_set_usbpre(RCC_CFGR_USBPRE_PLL_CLK_NODIV); /* Set 48Mhz, Max: 48Mhz */
+   rcc_set_hpre(RCC_CFGR_HPRE_DIV_NONE);     /* Set. 48MHz Max. 72MHz */
+ //  rcc_set_adcpre(RCC_CFGR_ADCPRE_PCLK2_DIV4);  /* Set. 12MHz Max. 14MHz */
+   rcc_set_ppre1(RCC_CFGR_PPRE_DIV_2);       /* Set. 24MHz Max. 36MHz */
+   rcc_set_ppre2(RCC_CFGR_PPRE_DIV_NONE);    /* Set. 48MHz Max. 72MHz */
+ //  rcc_set_usbpre(RCC_CFGR_USBPRE_PLL_CLK_NODIV); /* Set 48Mhz, Max: 48Mhz */
 
    /*
     * Sysclk runs with 24MHz -> 0 waitstates.
@@ -100,4 +103,5 @@ void RCC::clockAt48mhz()
    rcc_ahb_frequency = 48000000;
    rcc_apb1_frequency = 24000000;
    rcc_apb2_frequency = 48000000;
+#endif
 }

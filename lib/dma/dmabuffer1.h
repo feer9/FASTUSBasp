@@ -21,26 +21,26 @@
 
 #include "dmabuffer.h"
 
-dmabuffer<DMA1, DMA_CHANNEL1> dma1Ch1Buffer;
+dmabuffer<DMA1, DMA_STREAM1> dma1Ch1Buffer;
 
 extern "C" void dma1_channel1_isr(void)
 {
-   if ((DMA1_ISR &DMA_ISR_TCIF1) != 0)
+   if ((DMA1_LISR &DMA_LISR_TCIF1) != 0)
      {
-        DMA1_IFCR |= DMA_IFCR_CTCIF1;
+        DMA1_LIFCR |= DMA_LIFCR_CTCIF1;
 
         dma1Ch1Buffer.transferred = true;
         if (dma1Ch1Buffer._dma_cb) dma1Ch1Buffer._dma_cb();
      }
 
-   dma_disable_channel(DMA1, DMA_CHANNEL1);
+   dma_disable_stream(DMA1, DMA_STREAM1);
    //we need this below line if we want enable and disable dma complete interrupt 
    // on every buffer copy
 
    //dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL1);
 
    //DMA TCIF is an event flag and means trasnfer is completed.
-   dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
+   dma_clear_interrupt_flags(DMA1, DMA_STREAM1, DMA_TCIF);
 }
 
 #endif

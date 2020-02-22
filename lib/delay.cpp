@@ -21,25 +21,29 @@
 
 static volatile uint32_t system_ms = 0;
 
+//extern "C" __attribute__ ((used)) void SysTick_Handler(void)
+void led_toggle(void);
+
 extern "C" __attribute__ ((used)) void sys_tick_handler(void)
 {
    ++system_ms;
 }
 
+
 void time::enable(TimeFactor tf)
 {
+#if 1
    uint32_t val = 9000 - 1;
 
    systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
 
    //TODO: Add support for other clock speed
-   if (RCC::_clkSpeed == ClockSpeed::CLOCK72MHZ)
+   if (RCC::_clkSpeed == ClockSpeed::CLOCK168MHZ)
      {
-        // 9e6/9000 (N) = 1000 = 1 ms; N - 1 = is the argument 
         if (tf == TimeFactor::MILLISECONDS)
-          val = 9000 - 1;
+          val = 21000 - 1;
         else
-          val = 8;
+          val = 20;
      }
    else if (RCC::_clkSpeed == ClockSpeed::CLOCK128MHZ)
      {
@@ -48,21 +52,36 @@ void time::enable(TimeFactor tf)
         else
           val = 15;
      }
+   else if (RCC::_clkSpeed == ClockSpeed::CLOCK96MHZ)
+     {
+        // 9e6/9000 (N) = 1000 = 1 ms; N - 1 = is the argument 
+        if (tf == TimeFactor::MILLISECONDS)
+          val = 12000 - 1;
+        else
+          val = 11;
+     }
+   else if (RCC::_clkSpeed == ClockSpeed::CLOCK84MHZ)
+     {
+        // 9e6/9000 (N) = 1000 = 1 ms; N - 1 = is the argument 
+        if (tf == TimeFactor::MILLISECONDS)
+          val = 10500 - 1;
+        else
+          val = 9;
+     }
+   else if (RCC::_clkSpeed == ClockSpeed::CLOCK72MHZ)
+     {
+        // 9e6/9000 (N) = 1000 = 1 ms; N - 1 = is the argument 
+        if (tf == TimeFactor::MILLISECONDS)
+          val = 9000 - 1;
+        else
+          val = 8;
+     }
    else if (RCC::_clkSpeed == ClockSpeed::CLOCK48MHZ)
      {
         if (tf == TimeFactor::MILLISECONDS)
           val = 6000 - 1;
         else
           val = 5;
-     }
-   else if (RCC::_clkSpeed == ClockSpeed::CLOCK8MHZ)
-     {
-        //1e6/1000 = 1000, 
-        if (tf == TimeFactor::MILLISECONDS)
-          val = 1000 - 1;
-        else
-          //TODO: implement it later
-          val = 0; 
      }
    else if (RCC::_clkSpeed == ClockSpeed::CLOCK16MHZ)
      {
@@ -82,12 +101,29 @@ void time::enable(TimeFactor tf)
         else
           val = 12 - 1;
      }
+   else if (RCC::_clkSpeed == ClockSpeed::CLOCK8MHZ)
+     {
+        //1e6/1000 = 1000, 
+        if (tf == TimeFactor::MILLISECONDS)
+          val = 1000 - 1;
+        else
+          //TODO: implement it later
+          val = 0; 
+     }
 
    systick_set_reload(val);
+   systick_counter_enable();
    systick_interrupt_enable();
 
-   // start counting
-   systick_counter_enable();
+#else
+
+	/* clock rate / 1000 to get 1mS interrupt rate */
+	systick_set_reload(168000-1);
+	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB);
+	systick_counter_enable();
+	/* this done last */
+	systick_interrupt_enable();
+#endif
 }
 
 void time::delay(uint32_t delay_ms)
@@ -110,4 +146,9 @@ void time::udelay(uint32_t delay_ms)
 void time::disable()
 {
    systick_interrupt_disable();
+}
+
+uint32_t time::get_system_ms(void)
+{
+  return system_ms;
 }

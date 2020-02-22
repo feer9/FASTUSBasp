@@ -1,4 +1,4 @@
-add_library(stm32f1cpp
+add_library(stm32f4cpp
             pin.h pin.cpp
             rcc.h rcc.cpp
             delay.h delay.cpp
@@ -6,4 +6,4 @@ add_library(stm32f1cpp
             fastserial.h
             usb/descriptor.h
             )
-target_include_directories(stm32f1cpp PUBLIC .)
+target_include_directories(stm32f4cpp PUBLIC .)
