@@ -40,10 +40,10 @@ namespace util
                  _data = buf;
               }
 
-            ~queue()
-              {
+         //   ~queue()
+         //     {
                  //delete[] _data;
-              }
+         //     }
 
             inline int size()
               {
