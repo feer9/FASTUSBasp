@@ -26,12 +26,10 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/lib",
+                "/usr/lib/gcc/arm-none-eabi/9.2.0/include/",
+                "/home/feer/coding/stm32/libopencm3/include",
                 "${workspaceFolder}/src",
-                "/home/feer/stm32/libopencm3/include",
-                "/home/feer/stm32/libopencm3/include/libopencm3",
-                "/home/feer/stm32/libopencm3/include/libopencm3/usb",
-                "/home/feer/stm32/libopencm3/include/libopencm3/usb/dwc"
+                "${workspaceFolder}/lib"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
@@ -52,7 +50,8 @@
             "defines": [
                 "STM32F4",
                 "DEBUG"
-            ]
+            ],
+            "compilerArgs": []
         },
         {
             "name": "Win32",

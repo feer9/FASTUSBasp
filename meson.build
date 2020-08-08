@@ -10,7 +10,7 @@ stm32flash = find_program('stm32flash')
 
 
 #define libopencm3 path here
-libocm3Path = '/home/feer/stm32/libopencm3'
+libocm3Path = '/home/feer/coding/stm32/libopencm3'
 
 #define cpu types here
 cputype = 'cortex-m4'

@@ -25,6 +25,7 @@
 #include "dma/dmabuffer1.h"
 #include <string.h>
 #include "queue.h"
+#include <libopencm3/stm32/desig.h>
 
 #if USBDPLUS_WRONG_PULLUP == 1
 
@@ -76,27 +77,28 @@ static uint8_t prog_pagecounter;
 #include "isp.h"
 #include "config.h"
 
+static char serial[] = "0123456789AB";
 static const char *usb_strings[] =
 {
    "http://amitesh-singh.github.io", //manufacturer
    "fastusbasp", //product
-   "AARAV" // Serial number
+   serial // Serial number
 };
 
 const static auto dev_desc = usb::device_desc(
-   0x0200,
-   0, // We will define this later in interface classes
-   0,
-   0,
-   64,
-   0x16c0,
-   0x05dc,
-   0x0104,
+   0x0200, //bcdUSB = 2.00 */
+   0xEF, //Class We will define this later in interface classes
+   2, //SubClass
+   1, //Protocol
+   64, //Max Pkt size
+   0x16c0, //ven ID
+   0x05dc, //dev ID
+   0x0200, //bcdDevice 1.04
    1,
    2,
    3,
    1
-   );
+);
 
 static const struct {
      struct usb_cdc_header_descriptor header;
@@ -139,7 +141,7 @@ static const struct {
  * Linux cdc_acm driver
  */
 static const auto comm_endp_desc = usb::endpoint_desc(
-   0x83,
+   0x81,
    USB_ENDPOINT_ATTR_INTERRUPT,
    16,
    255
@@ -154,19 +156,19 @@ static const usb_interface_descriptor comm_iface[] =
                        &cdcacm_functional_descriptors, sizeof(cdcacm_functional_descriptors))
 };
 
-static const auto ep1_out = usb::endpoint_desc(
-   0x01,
+static const auto ep2_out = usb::endpoint_desc(
+   0x02,
    USB_ENDPOINT_ATTR_BULK,
    64,
-   1);
+   0);
 
-static const auto ep1_in = usb::endpoint_desc(
+static const auto ep3_in = usb::endpoint_desc(
    0x82,
    USB_ENDPOINT_ATTR_BULK,
    64,
-   1);
+   0);
 
-static const usb_endpoint_descriptor data_endp[] = {ep1_out, ep1_in};
+static const usb_endpoint_descriptor data_endp[] = {ep2_out, ep3_in};
 
 static const usb_interface_descriptor data_iface[] =
 {
@@ -251,6 +253,39 @@ serial s2;
 #endif
 
 
+static void IntToString (uint32_t value , char *pbuf , size_t len)
+{
+  for( size_t idx = 0 ; idx < len ; idx ++)
+  {
+    if( ((value >> 28)) < 0xA )
+    {
+      pbuf[idx] = (value >> 28) + '0';
+    }
+    else
+    {
+      pbuf[idx] = (value >> 28) + 'A' - 10;
+    }
+
+    value = value << 4;
+  }
+}
+
+static void Get_SerialNum(void)
+{
+  uint32_t Device_Serial[3];
+
+  desig_get_unique_id(Device_Serial);
+
+  Device_Serial[0] += Device_Serial[2];
+
+  if (Device_Serial[0] != 0)
+  {
+    IntToString (Device_Serial[0], serial, 8);
+    IntToString (Device_Serial[1], serial+8, 4);
+  }
+}
+
+
 int
 main()
 {
@@ -277,6 +312,7 @@ main()
    fastserial1.setRxcb(_serial1_rx_callback);
 
    // usb setup code 
+   Get_SerialNum();
    // enable clock
    RCC::enable(RCC_OTGFS); 
    // set USB pins to their functions
@@ -288,24 +324,26 @@ main()
 
    usbd_register_set_config_callback(usbd_dev, config_setup);
 
+   uint8_t in_transfer = 0;
    while (1)
    {
-      if (!q.empty())
-      {
-      /*
-         while (!dma1Ch1Buffer.transferred)
-         {
-            __asm__ volatile ("nop");
-         }
-         */
-         fastserial1.write(q.front().buffer, q.front().len);
-         while(!fastserial1.transferred)
-         {
-            __asm__ volatile ("nop");
-         }
+      if (fastserial1.transferred) {
+         if (in_transfer) {
          q.pop();
-      }
+         in_transfer = 0;
+         }
 
+         if (!q.empty())
+         {
+            auto buf = q.front();
+            if (buf.len>0) {
+               fastserial1.write(buf.buffer, buf.len);
+               in_transfer = 1;
+            } else {
+               q.pop();
+            }
+         }
+      }
       usbd_poll(usbd_dev);
    }
 
@@ -319,7 +357,7 @@ _serial_usb_data_in_cb(usbd_device *usb, uint8_t ep)
    (void) ep;
    int len;
 
-   len = usbd_ep_read_packet(usb, 0x01, usb_serial_databuf, 64);
+   len = usbd_ep_read_packet(usb, 0x02, usb_serial_databuf, 64);
    if (len)
      {
         q.push(usb_serial_databuf, len);
@@ -383,18 +421,18 @@ serial_control_request(usbd_device *usb,
                * even though it's optional in the CDC spec, and we don't
                * advertise it in the ACM functional descriptor.
                */
-              char local_buf[10];
-              usb_cdc_notification *notif = (usb_cdc_notification *)local_buf;
-
-              /* We echo signals back to host as notification. */
-              notif->bmRequestType = 0xA1;
-              notif->bNotification = USB_CDC_NOTIFY_SERIAL_STATE;
-              notif->wValue = 0;
-              notif->wIndex = 0;
-              notif->wLength = 2;
-              local_buf[8] = req->wValue & 3;
-              local_buf[9] = 0;
-              usbd_ep_write_packet(usbd_dev, 0x82, local_buf, 10);
+//              char local_buf[10];
+//              usb_cdc_notification *notif = (usb_cdc_notification *)local_buf;
+//
+//              /* We echo signals back to host as notification. */
+//              notif->bmRequestType = 0xA1;
+//              notif->bNotification = USB_CDC_NOTIFY_SERIAL_STATE;
+//              notif->wValue = 0;
+//              notif->wIndex = 0;
+//              notif->wLength = 2;
+//              local_buf[8] = req->wValue & 3;
+//              local_buf[9] = 0;
+//              usbd_ep_write_packet(usbd_dev, 0x82, local_buf, 10);
 
               return USBD_REQ_HANDLED;
            }
@@ -408,7 +446,7 @@ serial_control_request(usbd_device *usb,
                   memcpy(&_usb_cdc_line_coding_backup, usbCdcLineCondig,
                            sizeof(_usb_cdc_line_coding_backup));
 
-                  fastserial1.begin(115200);
+                  fastserial1.begin(usbCdcLineCondig->dwDTERate);
                   dma1Ch1Buffer.begin();
                   usbuart_set_line_coding(&_usb_cdc_line_coding_backup);
               }
@@ -427,6 +465,21 @@ serial_control_request(usbd_device *usb,
               
               return USBD_REQ_HANDLED;
            }
+      case 0x21: //USB_CDC_REQ_GET_LINE_CODING https://www.silabs.com/documents/public/application-notes/AN758.pdf page 3
+      	  {
+      		  if (req->wLength<sizeof(_usb_cdc_line_coding_backup))
+      			return USBD_REQ_NOTSUPP;
+
+      		  //Windows get Error when zero
+			  if (_usb_cdc_line_coding_backup.bDataBits==0)
+				_usb_cdc_line_coding_backup.bDataBits = 8;
+			  if (_usb_cdc_line_coding_backup.dwDTERate==0)
+			  	_usb_cdc_line_coding_backup.dwDTERate = 115200U;
+
+      		  memcpy(*buf, &_usb_cdc_line_coding_backup, *len = sizeof(_usb_cdc_line_coding_backup));
+
+      	  	  return USBD_REQ_HANDLED;
+      	  }
      }
    return USBD_REQ_NEXT_CALLBACK;
 }
@@ -650,9 +703,9 @@ config_setup(usbd_device *usb, uint16_t wValue)
    (void) usb;
    (void) wValue;
 
-   usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64, _serial_usb_data_in_cb);
+   usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_INTERRUPT, 16, nullptr);
+   usbd_ep_setup(usbd_dev, 0x02, USB_ENDPOINT_ATTR_BULK, 64, _serial_usb_data_in_cb);
    usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, nullptr);
-   usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, nullptr);
 
    usbd_register_control_callback(usbd_dev,
                                   USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
