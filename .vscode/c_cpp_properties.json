@@ -26,7 +26,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "/usr/lib/gcc/arm-none-eabi/9.2.0/include/",
+                "/usr/lib/gcc/arm-none-eabi/10.1.0/include/",
                 "/home/feer/coding/stm32/libopencm3/include",
                 "${workspaceFolder}/src",
                 "${workspaceFolder}/lib"
@@ -37,10 +37,10 @@
                 "path": [
                     "/usr/include",
                     "/usr/local/include",
-                    "/home/feer/stm32/libopencm3",
-                    "/home/feer/stm32/libopencm3/include",
-                    "/home/feer/stm32/libopencm3/lib/stm32/f1",
-                    "/home/feer/stm32/FASTUSBasp/lib"
+                    "/home/feer/coding/stm32/libopencm3",
+                    "/home/feer/coding/stm32/libopencm3/include",
+                    "/home/feer/coding/stm32/libopencm3/lib/stm32/f1",
+                    "/home/feer/coding/stm32/FASTUSBasp/lib"
                 ]
             },
             "intelliSenseMode": "gcc-x64",

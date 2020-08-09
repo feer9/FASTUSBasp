@@ -77,12 +77,12 @@ static uint8_t prog_pagecounter;
 #include "isp.h"
 #include "config.h"
 
-static char serial[] = "0123456789AB";
+static char serial_n[] = "0123456789AB";
 static const char *usb_strings[] =
 {
    "http://amitesh-singh.github.io", //manufacturer
    "fastusbasp", //product
-   serial // Serial number
+   serial_n // Serial number
 };
 
 const static auto dev_desc = usb::device_desc(
@@ -280,8 +280,8 @@ static void Get_SerialNum(void)
 
   if (Device_Serial[0] != 0)
   {
-    IntToString (Device_Serial[0], serial, 8);
-    IntToString (Device_Serial[1], serial+8, 4);
+    IntToString (Device_Serial[0], serial_n, 8);
+    IntToString (Device_Serial[1], serial_n+8, 4);
   }
 }
 
@@ -459,27 +459,21 @@ serial_control_request(usbd_device *usb,
 
               return retval;
            }
-      case USB_CDC_REQ_GET_LINE_CODING:
+      case USB_CDC_REQ_GET_LINE_CODING: // https://www.silabs.com/documents/public/application-notes/AN758.pdf page 3
            {
-              usbd_ep_write_packet(usbd_dev, 0x82, &_usb_cdc_line_coding_backup, sizeof (_usb_cdc_line_coding_backup));
-              
-              return USBD_REQ_HANDLED;
+//              usbd_ep_write_packet(usbd_dev, 0x82, &_usb_cdc_line_coding_backup, sizeof (_usb_cdc_line_coding_backup));
+					if (req->wLength<sizeof(_usb_cdc_line_coding_backup))
+						return USBD_REQ_NOTSUPP;
+
+					// Windows get Error when zero
+					if (_usb_cdc_line_coding_backup.bDataBits==0)
+						_usb_cdc_line_coding_backup.bDataBits = 8;
+					if (_usb_cdc_line_coding_backup.dwDTERate==0)
+						_usb_cdc_line_coding_backup.dwDTERate = 115200U;
+
+					memcpy(*buf, &_usb_cdc_line_coding_backup, *len = sizeof(_usb_cdc_line_coding_backup));
+					return USBD_REQ_HANDLED;
            }
-      case 0x21: //USB_CDC_REQ_GET_LINE_CODING https://www.silabs.com/documents/public/application-notes/AN758.pdf page 3
-      	  {
-      		  if (req->wLength<sizeof(_usb_cdc_line_coding_backup))
-      			return USBD_REQ_NOTSUPP;
-
-      		  //Windows get Error when zero
-			  if (_usb_cdc_line_coding_backup.bDataBits==0)
-				_usb_cdc_line_coding_backup.bDataBits = 8;
-			  if (_usb_cdc_line_coding_backup.dwDTERate==0)
-			  	_usb_cdc_line_coding_backup.dwDTERate = 115200U;
-
-      		  memcpy(*buf, &_usb_cdc_line_coding_backup, *len = sizeof(_usb_cdc_line_coding_backup));
-
-      	  	  return USBD_REQ_HANDLED;
-      	  }
      }
    return USBD_REQ_NEXT_CALLBACK;
 }
